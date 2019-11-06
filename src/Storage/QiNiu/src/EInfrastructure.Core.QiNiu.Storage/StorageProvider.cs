@@ -1,11 +1,11 @@
-﻿// Copyright (c) zhenlei520 All rights reserved.
+// Copyright (c) zhenlei520 All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Reflection;
 using EInfrastructure.Core.Config.StorageExtensions;
 using EInfrastructure.Core.Config.StorageExtensions.Param;
 using EInfrastructure.Core.Configuration.Ioc;
-using EInfrastructure.Core.HelpCommon.Systems;
 using EInfrastructure.Core.QiNiu.Storage.Config;
 using Qiniu.Http;
 using Qiniu.Storage;
@@ -33,7 +33,8 @@ namespace EInfrastructure.Core.QiNiu.Storage
         /// <returns></returns>
         public string GetIdentify()
         {
-            return AssemblyCommon.GetReflectedInfo().Namespace;
+            MethodBase method = MethodBase.GetCurrentMethod();
+            return method.ReflectedType.Namespace;
         }
 
         #endregion
@@ -52,7 +53,7 @@ namespace EInfrastructure.Core.QiNiu.Storage
             FormUploader target = new FormUploader(GetConfig(param.UploadPersistentOps));
             HttpResult result =
                 target.UploadStream(param.Stream, param.Key, token, GetPutExtra(param.UploadPersistentOps));
-            return result.Code == (int) HttpCode.OK;
+            return result.Code == (int)HttpCode.OK;
         }
 
         #endregion
@@ -74,7 +75,7 @@ namespace EInfrastructure.Core.QiNiu.Storage
                 HttpResult result =
                     target.UploadStream(param.File.OpenReadStream(), param.Key, token,
                         GetPutExtra(param.UploadPersistentOps));
-                return result.Code == (int) HttpCode.OK;
+                return result.Code == (int)HttpCode.OK;
             }
 
             return false;
@@ -98,5 +99,22 @@ namespace EInfrastructure.Core.QiNiu.Storage
         }
 
         #endregion
+
+        #region 检查文件是否存在
+
+        /// <summary>
+        /// 检查文件是否存在
+        /// </summary>
+        /// <param name="key">文件key</param>
+        /// <returns></returns>
+        public bool Exist(string key)
+        {
+            BucketManager bucketManager = new BucketManager(base.Mac, base.GetConfig());
+            StatResult statResult = bucketManager.Stat(base.QiNiuConfig.Bucket, key);
+            return statResult.Code == (int)HttpCode.OK;
+        }
+
+        #endregion
+
     }
 }

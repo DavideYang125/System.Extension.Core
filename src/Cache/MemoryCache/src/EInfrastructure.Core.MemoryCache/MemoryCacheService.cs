@@ -3,11 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 using EInfrastructure.Core.Config.CacheExtensions;
 using EInfrastructure.Core.Configuration.Ioc;
 using EInfrastructure.Core.HelpCommon;
-using EInfrastructure.Core.HelpCommon.Systems;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace EInfrastructure.Core.MemoryCache
@@ -36,7 +36,8 @@ namespace EInfrastructure.Core.MemoryCache
         /// <returns></returns>
         public string GetIdentify()
         {
-            return AssemblyCommon.GetReflectedInfo().Namespace;
+            MethodBase method = MethodBase.GetCurrentMethod();
+            return method.ReflectedType.Namespace;
         }
 
         #endregion
@@ -147,7 +148,7 @@ namespace EInfrastructure.Core.MemoryCache
         /// <typeparam name="T"></typeparam>
         /// <param name="key"></param>
         /// <returns></returns>
-        public T StringGet<T>(string key)
+        public T StringGet<T>(string key) where T : class, new()
         {
             if (key == null)
             {
@@ -330,7 +331,7 @@ namespace EInfrastructure.Core.MemoryCache
         /// <param name="t"></param>
         /// <param name="second"></param>
         /// <returns></returns>
-        public bool HashSet<T>(string key, string dataKey, T t, long second = -1L)
+        public bool HashSet<T>(string key, string dataKey, T t, long second = -1L, bool isSetHashKeyExpire = true)
         {
             return false;
         }
@@ -347,10 +348,38 @@ namespace EInfrastructure.Core.MemoryCache
         /// <param name="kvalues"></param>
         /// <param name="second">秒</param>
         /// <returns></returns>
-        public bool HashSet<T>(string key, Dictionary<string, T> kvalues, long second = -1L)
+        public bool HashSet<T>(string key, Dictionary<string, T> kvalues, long second = -1L,
+            bool isSetHashKeyExpire = true)
         {
             return false;
         }
+
+        /// <summary>
+        /// 存储数据到hash表
+        /// </summary>
+        /// <param name="kValues"></param>
+        /// <param name="second"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public bool HashSet<T>(Dictionary<string, Dictionary<string, T>> kValues, long second = -1,
+            bool isSetHashKeyExpire = true)
+        {
+            return false;
+        }
+
+        #region 清除过期的hashkey(自定义hashkey删除)
+
+        /// <summary>
+        /// 清除过期的hashkey(自定义hashkey删除)
+        /// </summary>
+        /// <param name="count">指定清除指定数量的已过期的hashkey</param>
+        /// <returns></returns>
+        public bool ClearOverTimeHashKey(long count = 1000l)
+        {
+            return false;
+        }
+
+        #endregion
 
         #endregion
 
@@ -393,7 +422,7 @@ namespace EInfrastructure.Core.MemoryCache
         /// <param name="key"></param>
         /// <param name="dataKey"></param>
         /// <returns></returns>
-        public T HashGet<T>(string key, string dataKey)
+        public T HashGet<T>(string key, string dataKey) where T : class, new()
         {
             return default(T);
         }
@@ -422,6 +451,11 @@ namespace EInfrastructure.Core.MemoryCache
         /// <param name="dataKeys"></param>
         /// <returns></returns>
         public Dictionary<string, string> HashGet(string key, List<string> dataKeys)
+        {
+            return null;
+        }
+
+        public Dictionary<string, Dictionary<string, string>> HashGet(Dictionary<string, string[]> keys)
         {
             return null;
         }
@@ -549,7 +583,7 @@ namespace EInfrastructure.Core.MemoryCache
         /// <param name="key"></param>
         /// <param name="dataKey"></param>
         /// <returns></returns>
-        public Task<T> HashGetAsync<T>(string key, string dataKey)
+        public Task<T> HashGetAsync<T>(string key, string dataKey) where T : class, new()
         {
             return new Task<T>(() => HashGet<T>(key, dataKey));
         }
@@ -565,6 +599,7 @@ namespace EInfrastructure.Core.MemoryCache
         {
             throw new NotImplementedException();
         }
+
         #endregion
 
         #region 为数字增长val
@@ -634,6 +669,11 @@ namespace EInfrastructure.Core.MemoryCache
             return 0;
         }
 
+        public List<string> ListRange(string key, long count = 1000)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region 获取指定key的List
@@ -644,7 +684,7 @@ namespace EInfrastructure.Core.MemoryCache
         /// <param name="key"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public List<T> ListRange<T>(string key, long count = 1000L)
+        public List<T> ListRange<T>(string key, long count = 1000L) where T : class, new()
         {
             return default(List<T>);
         }
@@ -664,6 +704,11 @@ namespace EInfrastructure.Core.MemoryCache
             return 0;
         }
 
+        public string ListRightPop(string key)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region 出队
@@ -674,7 +719,7 @@ namespace EInfrastructure.Core.MemoryCache
         /// <typeparam name="T"></typeparam>
         /// <param name="key"></param>
         /// <returns></returns>
-        public T ListRightPop<T>(string key)
+        public T ListRightPop<T>(string key) where T : class, new()
         {
             return default(T);
         }
@@ -695,8 +740,12 @@ namespace EInfrastructure.Core.MemoryCache
             return 0;
         }
 
-        #endregion
+        public string ListLeftPop(string key)
+        {
+            throw new NotImplementedException();
+        }
 
+        #endregion
 
         #region 出栈
 
@@ -706,7 +755,7 @@ namespace EInfrastructure.Core.MemoryCache
         /// <typeparam name="T"></typeparam>
         /// <param name="key"></param>
         /// <returns></returns>
-        public T ListLeftPop<T>(string key)
+        public T ListLeftPop<T>(string key) where T : class, new()
         {
             return default(T);
         }
@@ -744,6 +793,11 @@ namespace EInfrastructure.Core.MemoryCache
             return new Task<long>(() => ListRemove(key, value));
         }
 
+        public Task<List<string>> ListRangeAsync(string key, long count = 1000)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region 获取指定key的List
@@ -754,7 +808,7 @@ namespace EInfrastructure.Core.MemoryCache
         /// <param name="key"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Task<List<T>> ListRangeAsync<T>(string key, long count = 1000L)
+        public Task<List<T>> ListRangeAsync<T>(string key, long count = 1000L) where T : class, new()
         {
             return new Task<List<T>>(() => ListRange<T>(key, count));
         }
@@ -774,6 +828,11 @@ namespace EInfrastructure.Core.MemoryCache
             return new Task<long>(() => ListRightPush<T>(key, value));
         }
 
+        public Task<string> ListRightPopAsync(string key)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region 出队
@@ -784,7 +843,7 @@ namespace EInfrastructure.Core.MemoryCache
         /// <typeparam name="T"></typeparam>
         /// <param name="key"></param>
         /// <returns></returns>
-        public Task<T> ListRightPopAsync<T>(string key)
+        public Task<T> ListRightPopAsync<T>(string key) where T : class, new()
         {
             return new Task<T>(() => ListRightPop<T>(key));
         }
@@ -805,6 +864,11 @@ namespace EInfrastructure.Core.MemoryCache
             return new Task<long>(() => ListLeftPush<T>(key, value));
         }
 
+        public Task<string> ListLeftPopAsync(string key)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region 出栈
@@ -815,7 +879,7 @@ namespace EInfrastructure.Core.MemoryCache
         /// <typeparam name="T"></typeparam>
         /// <param name="key"></param>
         /// <returns></returns>
-        public Task<T> ListLeftPopAsync<T>(string key)
+        public Task<T> ListLeftPopAsync<T>(string key) where T : class, new()
         {
             return new Task<T>(() => ListLeftPop<T>(key));
         }
@@ -874,6 +938,11 @@ namespace EInfrastructure.Core.MemoryCache
             return false;
         }
 
+        public List<string> SortedSetRangeByRank(string key, long count = 1000)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region 获取全部
@@ -884,7 +953,7 @@ namespace EInfrastructure.Core.MemoryCache
         /// <param name="key"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public List<T> SortedSetRangeByRank<T>(string key, long count = 1000L)
+        public List<T> SortedSetRangeByRank<T>(string key, long count = 1000L) where T : class, new()
         {
             return default(List<T>);
         }
@@ -901,9 +970,14 @@ namespace EInfrastructure.Core.MemoryCache
         /// <param name="fromRank"></param>
         /// <param name="toRank"></param>
         /// <returns></returns>
-        public List<T> GetRangeFromSortedSetDesc<T>(string key, long fromRank, long toRank)
+        public List<T> GetRangeFromSortedSetDesc<T>(string key, long fromRank, long toRank) where T : class, new()
         {
             return default(List<T>);
+        }
+
+        public List<string> GetRangeFromSortedSet(string key, long fromRank, long toRank)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion
@@ -915,9 +989,9 @@ namespace EInfrastructure.Core.MemoryCache
         /// </summary>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Dictionary<string, string> SortedSetRangeByRankAndOverTime(long count = 1000L)
+        public List<ValueTuple<string, string, string, string>> SortedSetRangeByRankAndOverTime(long count = 1000l)
         {
-            return default(Dictionary<string, string>);
+            return default(List<ValueTuple<string, string, string, string>>);
         }
 
         #endregion
@@ -932,7 +1006,7 @@ namespace EInfrastructure.Core.MemoryCache
         /// <param name="fromRank"></param>
         /// <param name="toRank"></param>
         /// <returns></returns>
-        public List<T> GetRangeFromSortedSet<T>(string key, long fromRank, long toRank)
+        public List<T> GetRangeFromSortedSet<T>(string key, long fromRank, long toRank) where T : class, new()
         {
             return default(List<T>);
         }
@@ -1002,6 +1076,11 @@ namespace EInfrastructure.Core.MemoryCache
             return new Task<bool>(() => SortedSetRemove(key, value));
         }
 
+        public Task<List<string>> SortedSetRangeByRankAsync(string key, long count = 1000)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region 获取全部
@@ -1012,7 +1091,8 @@ namespace EInfrastructure.Core.MemoryCache
         /// <param name="key"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Task<List<T>> SortedSetRangeByRankAsync<T>(string key, long count = 1000L)
+        public Task<List<T>> SortedSetRangeByRankAsync<T>(string key, long count = 1000L) where T : class, new()
+
         {
             return new Task<List<T>>(() => SortedSetRangeByRank<T>(key, count));
         }
@@ -1062,6 +1142,7 @@ namespace EInfrastructure.Core.MemoryCache
         {
             throw new NotImplementedException();
         }
+
         #endregion
 
         #region 检查给定 key 是否存在

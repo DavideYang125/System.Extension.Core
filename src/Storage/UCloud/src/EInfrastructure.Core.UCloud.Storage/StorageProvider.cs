@@ -3,10 +3,10 @@
 
 using System;
 using System.IO;
+using System.Reflection;
 using EInfrastructure.Core.Config.StorageExtensions;
 using EInfrastructure.Core.Config.StorageExtensions.Param;
 using EInfrastructure.Core.Configuration.Ioc;
-using EInfrastructure.Core.HelpCommon.Systems;
 using EInfrastructure.Core.UCloud.Storage.Config;
 
 namespace EInfrastructure.Core.UCloud.Storage
@@ -32,7 +32,8 @@ namespace EInfrastructure.Core.UCloud.Storage
         /// <returns></returns>
         public string GetIdentify()
         {
-            return AssemblyCommon.GetReflectedInfo().Namespace;
+            MethodBase method = MethodBase.GetCurrentMethod();
+            return method.ReflectedType.Namespace;
         }
 
         #endregion
@@ -86,6 +87,20 @@ namespace EInfrastructure.Core.UCloud.Storage
         /// <param name="opsParam">上传信息</param>
         /// <param name="func"></param>
         public string GetUploadCredentials(UploadPersistentOpsParam opsParam, Func<string> func)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
+        #region 检查文件是否存在
+
+        /// <summary>
+        /// 检查文件是否存在
+        /// </summary>
+        /// <param name="key">文件key</param>
+        /// <returns></returns>
+        public bool Exist(string key)
         {
             throw new NotImplementedException();
         }

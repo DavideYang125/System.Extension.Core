@@ -3,24 +3,15 @@
 
 using System;
 using EInfrastructure.Core.Config.StorageExtensions.Param;
+using EInfrastructure.Core.Configuration.Ioc;
 
 namespace EInfrastructure.Core.Config.StorageExtensions
 {
     /// <summary>
     /// 文件存储
     /// </summary>
-    public interface IStorageService
+    public interface IStorageService : IIdentify
     {
-        #region 得到实现类唯一标示
-
-        /// <summary>
-        /// 得到实现类唯一标示
-        /// </summary>
-        /// <returns></returns>
-        string GetIdentify();
-
-        #endregion
-
         #region 根据文件流上传
 
         /// <summary>
@@ -51,6 +42,17 @@ namespace EInfrastructure.Core.Config.StorageExtensions
         /// <param name="opsParam">上传信息</param>
         /// <param name="func"></param>
         string GetUploadCredentials(UploadPersistentOpsParam opsParam, Func<string> func);
+
+        #endregion
+
+        #region 检查文件是否存在
+
+        /// <summary>
+        /// 检查文件是否存在
+        /// </summary>
+        /// <param name="key">文件key</param>
+        /// <returns></returns>
+        bool Exist(string key);
 
         #endregion
     }

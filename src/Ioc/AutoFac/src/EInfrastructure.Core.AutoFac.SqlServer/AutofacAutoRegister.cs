@@ -15,7 +15,7 @@ namespace EInfrastructure.Core.AutoFac.SqlServer
     public class AutofacAutoRegister : EInfrastructure.Core.AutoFac.AutofacAutoRegister
     {
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="services"></param>
         /// <param name="action"></param>

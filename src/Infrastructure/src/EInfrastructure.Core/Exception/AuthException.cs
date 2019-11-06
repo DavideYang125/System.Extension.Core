@@ -1,7 +1,7 @@
 ﻿// Copyright (c) zhenlei520 All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using EInfrastructure.Core.Configuration.Enum;
+using EInfrastructure.Core.Configuration.Enumeration;
 using EInfrastructure.Core.HelpCommon;
 
 namespace EInfrastructure.Core.Exception
@@ -15,12 +15,9 @@ namespace EInfrastructure.Core.Exception
         /// 权限校验
         /// </summary>
         /// <param name="msg">提示信息</param>
-        public AuthException(string msg = "")
+        public AuthException(string msg = ""):base(HttpStatus.Unauthorized.Name)
         {
-            if (string.IsNullOrEmpty(msg))
-            {
-                throw new System.Exception(HttpStatusEnum.Unauthorized.GetDescription());
-            }
+
         }
     }
 }

@@ -15,7 +15,7 @@ namespace EInfrastructure.Core.AutoFac.MySql
     public class AutofacAutoRegister : AutoFac.AutofacAutoRegister
     {
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="services"></param>
         /// <param name="action"></param>

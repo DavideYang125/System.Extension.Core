@@ -2,14 +2,16 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using EInfrastructure.Core.Config.StorageExtensions.Config;
-using EInfrastructure.Core.Config.StorageExtensions.Enum;
+using EInfrastructure.Core.Config.StorageExtensions.Enumeration;
 using EInfrastructure.Core.Configuration.Ioc;
+using EInfrastructure.Core.Configuration.SeedWork;
 using EInfrastructure.Core.HelpCommon;
 using EInfrastructure.Core.QiNiu.Storage.Config;
 using EInfrastructure.Core.QiNiu.Storage.Validator;
 using EInfrastructure.Core.Validation.Common;
 using Qiniu.Storage;
 using Qiniu.Util;
+using ChunkUnit = EInfrastructure.Core.Config.StorageExtensions.Enumeration.ChunkUnit;
 
 namespace EInfrastructure.Core.QiNiu.Storage
 {
@@ -42,7 +44,7 @@ namespace EInfrastructure.Core.QiNiu.Storage
             {
                 PutPolicy.PersistentNotifyUrl = QiNiuConfig.PersistentNotifyUrl;
                 PutPolicy.CallbackBody = QiNiuConfig.CallbackBody;
-                PutPolicy.CallbackBodyType = QiNiuConfig.CallbackBodyType.GetDescription();
+                PutPolicy.CallbackBodyType = Enumeration.FromValue<EInfrastructure.Core.Config.StorageExtensions.Enumeration.CallbackBodyType>(QiNiuConfig.CallbackBodyType).Name;
                 PutPolicy.CallbackUrl = QiNiuConfig.CallbackUrl;
             }
 
@@ -79,7 +81,7 @@ namespace EInfrastructure.Core.QiNiu.Storage
         /// <summary>
         /// 设置上传策略
         /// </summary>
-        /// <param name="key"></param>
+        /// <param name="key">文件名</param>
         /// <param name="isAllowOverlap">是否允许覆盖上传</param>
         /// <param name="persistentOps">上传预转持久化</param>
         /// <param name="expireInSeconds">上传策略失效时刻</param>
@@ -88,9 +90,11 @@ namespace EInfrastructure.Core.QiNiu.Storage
         protected void SetPutPolicy(string key, bool isAllowOverlap = false, string persistentOps = "",
             int expireInSeconds = 3600, int? deleteAfterDays = null)
         {
+            PutPolicy.SaveKey=key;
+
             #region 覆盖上传
 
-            if (isAllowOverlap)
+            if (!isAllowOverlap)
             {
                 PutPolicy.Scope = QiNiuConfig.Bucket;
             }
@@ -163,18 +167,18 @@ namespace EInfrastructure.Core.QiNiu.Storage
                 if (uploadPersistentOps.UploadController != null)
                 {
                     var state = putExtra.UploadController();
-                    UploadStateEnum uploadState;
+                    UploadState uploadState;
                     if (state == UploadControllerAction.Activated)
                     {
-                        uploadState = UploadStateEnum.Activated;
+                        uploadState = UploadState.Activated;
                     }
                     else if (state == UploadControllerAction.Aborted)
                     {
-                        uploadState = UploadStateEnum.Aborted;
+                        uploadState = UploadState.Aborted;
                     }
                     else
                     {
-                        uploadState = UploadStateEnum.Suspended;
+                        uploadState = UploadState.Suspended;
                     }
 
                     uploadPersistentOps.UploadController?.Invoke(uploadState);
@@ -219,10 +223,10 @@ namespace EInfrastructure.Core.QiNiu.Storage
                 }
             }
 
-            ChunkUnit Get(ChunkUnitEnum chunkUnit)
+            Qiniu.Storage.ChunkUnit Get(ChunkUnit chunkUnit)
             {
-                int chunkUnits = (int) chunkUnit;
-                return (ChunkUnit) chunkUnits;
+                int chunkUnits =  chunkUnit.Id;
+                return (Qiniu.Storage.ChunkUnit) chunkUnits;
             }
 
             return config;

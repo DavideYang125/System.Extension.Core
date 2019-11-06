@@ -4,13 +4,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using EInfrastructure.Core.Config.SerializeExtensions;
+using EInfrastructure.Core.Config.SerializeExtensions.Interfaces;
 using EInfrastructure.Core.Configuration.Data;
+using EInfrastructure.Core.Configuration.Enumeration;
 using EInfrastructure.Core.Exception;
+using EInfrastructure.Core.Serialize.NewtonsoftJson;
 
 namespace EInfrastructure.Core.HelpCommon
 {
     /// <summary>
-    /// 操作帮助类
+    /// List操作帮助类
     /// </summary>
     public static class ListCommon
     {
@@ -29,10 +33,12 @@ namespace EInfrastructure.Core.HelpCommon
         public static List<T> Add<T>(this List<T> t1, List<T> t2, bool isCheckRepeat = false)
         {
             if (!isCheckRepeat)
+            {
                 t1.AddRange(t2);
-            else
-                t1.AddCnki(t2);
-            return t1;
+                return t1;
+            }
+
+            return t1.AddCnki(t2);
         }
 
         /// <summary>
@@ -42,14 +48,46 @@ namespace EInfrastructure.Core.HelpCommon
         /// <param name="t1">集合1</param>
         /// <param name="t2">集合2</param>
         /// <returns></returns>
-        private static void AddCnki<T>(this List<T> t1, List<T> t2)
+        private static List<T> AddCnki<T>(this List<T> t1, List<T> t2)
         {
             List<T> resultList = new CloneableClass().DeepClone(t1);
+            List<string> resultStrList = new List<string>();
             foreach (var item in t2)
             {
-                if (t1.Contains(item))
+                if (IsExist(item))
                     continue;
                 resultList.Add(item);
+            }
+
+            return resultList;
+
+            bool IsExist(T t)
+            {
+                if (t is string)
+                {
+                    return t1.Contains(t);
+                }
+
+                return GetResultList().Contains(new JsonService(new List<IJsonProvider>()
+                {
+                    new NewtonsoftJsonProvider()
+                }).Serializer(t));
+            }
+
+            List<string> GetResultList()
+            {
+                if (resultStrList.Count == 0 && resultList.Count != 0)
+                {
+                    t1.ForEach(item =>
+                    {
+                        resultStrList.Add(new JsonService(new List<IJsonProvider>
+                        {
+                            new NewtonsoftJsonProvider()
+                        }).Serializer(item));
+                    });
+                }
+
+                return resultStrList;
             }
         }
 
@@ -67,6 +105,53 @@ namespace EInfrastructure.Core.HelpCommon
         public static List<T> Minus<T>(this List<T> t1, List<T> t2)
         {
             return t1.Where(x => !t2.Contains(x)).ToList();
+        }
+
+        /// <summary>
+        /// List实体减法操作
+        /// </summary>
+        /// <typeparam name="T">类型</typeparam>
+        /// <param name="t1">集合1</param>
+        /// <param name="t2">集合2</param>
+        /// <returns>排除t1中包含t2的项</returns>
+        public static List<T> Minus<T>(this List<T> t1, List<T> t2, bool isCheckRepeat = false) where T : class, new()
+        {
+            if (!isCheckRepeat)
+                return Minus(t1, t2);
+            return MinusCnki(t1, t2);
+        }
+
+        /// <summary>
+        /// 查重添加
+        /// </summary>
+        /// <typeparam name="T">类型</typeparam>
+        /// <param name="t1">集合1</param>
+        /// <param name="t2">集合2</param>
+        /// <returns></returns>
+        private static List<T> MinusCnki<T>(this List<T> t1, List<T> t2) where T : class, new()
+        {
+            JsonService jsonService = new JsonService(new List<IJsonProvider>
+            {
+                new NewtonsoftJsonProvider()
+            });
+
+            List<T> resultList = new CloneableClass().DeepClone(t1);
+            List<string> resultStrList = new List<string>();
+            if (resultStrList.Count == 0 && resultList.Count != 0)
+            {
+                t1.ForEach(item => { resultStrList.Add(jsonService.Serializer(item)); });
+            }
+
+            foreach (var item in t2)
+            {
+                var str = jsonService.Serializer(item);
+                if (resultStrList.Contains(str))
+                {
+                    resultStrList.Remove(str);
+                }
+            }
+
+            return resultStrList.Select(x => jsonService.Deserialize<T>(x)).ToList();
         }
 
         #endregion
@@ -130,6 +215,29 @@ namespace EInfrastructure.Core.HelpCommon
         /// <param name="isReplaceSpace">是否去除空格(仅当为string有效)</param>
         /// <returns></returns>
         public static string ConvertListToString<T>(this List<T> s, char c = ',', bool isReplaceEmpty = true,
+            bool isReplaceSpace = true) where T : struct
+        {
+            if (s == null || s.Count == 0)
+            {
+                return "";
+            }
+
+            return ConvertListToString(s.Select(x => x.ToString()).ToList(), c, isReplaceEmpty, isReplaceSpace);
+        }
+
+        #endregion
+
+        #region List转换为string
+
+        /// <summary>
+        /// List转换为string
+        /// </summary>
+        /// <param name="s">待转换的list集合</param>
+        /// <param name="c">分割字符</param>
+        /// <param name="isReplaceEmpty">是否移除Null或者空字符串</param>
+        /// <param name="isReplaceSpace">是否去除空格(仅当为string有效)</param>
+        /// <returns></returns>
+        public static string ConvertListToString(this List<string> s, char c = ',', bool isReplaceEmpty = true,
             bool isReplaceSpace = true)
         {
             if (s == null || s.Count == 0)
@@ -140,25 +248,22 @@ namespace EInfrastructure.Core.HelpCommon
             string temp = "";
             foreach (var item in s)
             {
-                if (item != null)
+                if (isReplaceEmpty)
                 {
-                    if (isReplaceEmpty)
+                    string itemTemp = "";
+                    if (isReplaceSpace)
                     {
-                        string itemTemp = "";
-                        if (isReplaceSpace)
-                        {
-                            itemTemp = item.ToString().Trim();
-                        }
+                        itemTemp = item.Trim();
+                    }
 
-                        if (!string.IsNullOrEmpty(itemTemp))
-                        {
-                            temp = temp + itemTemp + c;
-                        }
-                    }
-                    else
+                    if (!string.IsNullOrEmpty(itemTemp))
                     {
-                        temp = temp + item.ToString() + c;
+                        temp = temp + itemTemp + c;
                     }
+                }
+                else
+                {
+                    temp = temp + item + c;
                 }
             }
 
@@ -194,34 +299,6 @@ namespace EInfrastructure.Core.HelpCommon
 
         #endregion
 
-        #region 合并两个类型一致的泛型集合
-
-        /// <summary>
-        /// 合并两个类型一致的泛型
-        /// </summary>
-        /// <typeparam name="T">类型</typeparam>
-        /// <param name="a">泛型A</param>
-        /// <param name="b">泛型B</param>
-        /// <returns></returns>
-        public static List<T> ConvertTJoinOtherT<T>(this List<T> a, List<T> b)
-        {
-            if (a == null)
-            {
-                a = new List<T>();
-            }
-
-            if (b == null)
-            {
-                b = new List<T>();
-            }
-
-            List<T> c = a.ToList();
-            c.AddRange(b);
-            return c;
-        }
-
-        #endregion
-
         #region 对list集合分页
 
         /// <summary>
@@ -242,7 +319,24 @@ namespace EInfrastructure.Core.HelpCommon
                 list.RowCount = query.Count();
             }
 
-            list.Data = pageSize > 0 ? query.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList() : query.ToList();
+            if (pageIndex - 1 < 0)
+            {
+                throw new BusinessException("页码必须大于等于1");
+            }
+
+            query = query.Skip((pageIndex - 1) * pageSize).ToList();
+            if (pageSize > 0)
+            {
+                list.Data = query.Take(pageSize).ToList();
+            }
+            else if (pageSize < 1 && pageSize != -1)
+            {
+                throw new BusinessException("页大小须等于-1或者大于0");
+            }
+            else
+            {
+                list.Data = query.ToList();
+            }
 
             return list;
         }
@@ -252,19 +346,20 @@ namespace EInfrastructure.Core.HelpCommon
         #region 对list集合分页
 
         /// <summary>
-        /// 对list集合分页
+        /// 对list集合分页执行某个方法
         /// </summary>
         /// <param name="query"></param>
         /// <param name="action"></param>
         /// <param name="pageSize">页大小</param>
         /// <param name="pageIndex">当前页数（默认第一页）</param>
+        /// <param name="errCode">错误码</param>
         /// <typeparam name="T"></typeparam>
         public static void ListPager<T>(this ICollection<T> query, Action<List<T>> action, int pageSize = -1,
-            int pageIndex = 1)
+            int pageIndex = 1, int? errCode = null)
         {
             if (pageSize <= 0 && pageSize != -1)
             {
-                throw new BusinessException("页大小必须为正数");
+                throw new BusinessException("页大小必须为正数", errCode ?? HttpStatus.Err.Id);
             }
 
             var totalCount = query.Count * 1.0d;
@@ -275,7 +370,7 @@ namespace EInfrastructure.Core.HelpCommon
             }
             else
             {
-                pageSize = totalCount.ConvertToInt(0) * -1;
+                pageSize = totalCount.ConvertToInt(0) * 1;
             }
 
             for (int index = pageIndex; index <= pageMax; index++)
@@ -374,7 +469,7 @@ namespace EInfrastructure.Core.HelpCommon
         public static List<T> RemoveMultNew<T>(this List<T> list, Func<T, bool> condtion)
         {
             List<T> listTemp = list;
-            var items = listTemp.Where(condtion).ToList() ?? new List<T>();
+            var items = listTemp.Where(condtion).ToList();
             foreach (var item in items)
             {
                 listTemp.Remove(item);

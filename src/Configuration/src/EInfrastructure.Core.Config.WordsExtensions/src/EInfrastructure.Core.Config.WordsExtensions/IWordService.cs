@@ -2,7 +2,8 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
-using EInfrastructure.Core.Config.WordsExtensions.Enum;
+using EInfrastructure.Core.Config.WordsExtensions.Enumeration;
+using EInfrastructure.Core.Configuration.Enumeration;
 using EInfrastructure.Core.Configuration.Ioc;
 
 namespace EInfrastructure.Core.Config.WordsExtensions
@@ -10,18 +11,8 @@ namespace EInfrastructure.Core.Config.WordsExtensions
     /// <summary>
     /// 文字
     /// </summary>
-    public interface IWordService : ISingleInstance
+    public interface IWordService : ISingleInstance, IIdentify
     {
-        #region 得到实现类唯一标示
-
-        /// <summary>
-        /// 得到实现类唯一标示
-        /// </summary>
-        /// <returns></returns>
-        string GetIdentify();
-
-        #endregion
-
         #region 得到文字首字母
 
         /// <summary>
@@ -119,7 +110,7 @@ namespace EInfrastructure.Core.Config.WordsExtensions
         /// <param name="text">文本信息</param>
         /// <param name="wordTypeList">文本类型集合</param>
         /// <returns></returns>
-        bool IsExist(string text, List<WordTypeEnum> wordTypeList);
+        bool IsExist(string text, List<WordType> wordTypeList);
 
         #endregion
 
@@ -131,7 +122,7 @@ namespace EInfrastructure.Core.Config.WordsExtensions
         /// <param name="text">文字信息</param>
         /// <param name="textType">文字类型</param>
         /// <returns></returns>
-        bool IsExist(string text, TextTypesEnum textType);
+        bool IsExist(string text, TextTypes textType);
 
         #endregion
 
@@ -155,7 +146,7 @@ namespace EInfrastructure.Core.Config.WordsExtensions
         /// <param name="text">文本信息</param>
         /// <param name="wordTypeList">文本类型集合</param>
         /// <returns></returns>
-        bool IsAll(string text, List<WordTypeEnum> wordTypeList);
+        bool IsAll(string text, List<WordType> wordTypeList);
 
         #endregion
 
@@ -167,7 +158,7 @@ namespace EInfrastructure.Core.Config.WordsExtensions
         /// <param name="text">文字信息</param>
         /// <param name="textType">文字类型</param>
         /// <returns></returns>
-        bool IsAll(string text, TextTypesEnum textType);
+        bool IsAll(string text, TextTypes textType);
 
         #endregion
 

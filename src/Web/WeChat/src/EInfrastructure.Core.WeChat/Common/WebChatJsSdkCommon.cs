@@ -3,6 +3,7 @@
 
 using System;
 using EInfrastructure.Core.Config.CacheExtensions;
+using EInfrastructure.Core.Configuration.Enumeration;
 using EInfrastructure.Core.Exception;
 using EInfrastructure.Core.HelpCommon;
 using EInfrastructure.Core.WeChat.Config;
@@ -40,13 +41,14 @@ namespace EInfrastructure.Core.WeChat.Common
         ///
         /// </summary>
         /// <param name="cacheKey"></param>
+        /// <param name="errCode">错误码</param>
         /// <returns></returns>
         /// <exception cref="BusinessException"></exception>
-        public string GetAccessToken(string cacheKey)
+        public string GetAccessToken(string cacheKey, int? errCode = null)
         {
             cacheKey = cacheKey + _config.Type;
 
-            string token = _cacheService.StringGet<string>(cacheKey);
+            string token = _cacheService.StringGet(cacheKey);
 
             if (string.IsNullOrEmpty(token))
             {
@@ -57,7 +59,7 @@ namespace EInfrastructure.Core.WeChat.Common
 
                 if (result.Contains("errcode"))
                 {
-                    throw new BusinessException("获取token失败");
+                    throw new BusinessException("获取token失败", errCode??HttpStatus.Err.Id);
                 }
 
                 JObject obj = JsonConvert.DeserializeObject<dynamic>(result);
@@ -75,11 +77,12 @@ namespace EInfrastructure.Core.WeChat.Common
         /// </summary>
         /// <param name="tickCacheKey"></param>
         /// <param name="tokenCacheKey"></param>
+        /// <param name="errCode">错误码</param>
         /// <returns></returns>
         /// <exception cref="BusinessException"></exception>
-        public string GetJsApiTicket(string tickCacheKey, string tokenCacheKey)
+        public string GetJsApiTicket(string tickCacheKey, string tokenCacheKey, int? errCode = null)
         {
-            string ticket = _cacheService.StringGet<string>(tickCacheKey);
+            string ticket = _cacheService.StringGet(tickCacheKey);
 
             if (string.IsNullOrEmpty(ticket))
             {
@@ -91,7 +94,7 @@ namespace EInfrastructure.Core.WeChat.Common
 
                 if (!result.Contains("ok"))
                 {
-                    throw new BusinessException("获取ticket失败");
+                    throw new BusinessException("获取ticket失败", errCode??HttpStatus.Err.Id);
                 }
 
                 dynamic obj = JsonConvert.DeserializeObject<dynamic>(result);
@@ -117,7 +120,7 @@ namespace EInfrastructure.Core.WeChat.Common
 
             string nonceStr = Guid.NewGuid().ToString().Replace("-", "");
 
-            long timestamp = TimeCommon.CurrentTimeMillis();
+            long timestamp = DateTime.Now.CurrentTimeMillis();
 
             JsSdkConfig config = new JsSdkConfig()
             {
