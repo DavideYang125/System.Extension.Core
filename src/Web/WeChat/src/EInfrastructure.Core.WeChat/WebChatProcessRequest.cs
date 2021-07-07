@@ -2,13 +2,16 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using EInfrastructure.Core.Config.SerializeExtensions;
+using System.Collections.Generic;
+using EInfrastructure.Core.Configuration.Enumerations;
+using EInfrastructure.Core.Configuration.Exception;
 using EInfrastructure.Core.Configuration.Ioc;
-using EInfrastructure.Core.Exception;
+using EInfrastructure.Core.Configuration.Ioc.Plugs;
 using EInfrastructure.Core.HelpCommon;
+using EInfrastructure.Core.Tools;
 using EInfrastructure.Core.WeChat.Common;
 using EInfrastructure.Core.WeChat.Config;
-using EInfrastructure.Core.WeChat.Enum;
+using EInfrastructure.Core.WeChat.Enumerations;
 using Newtonsoft.Json;
 using RestSharp;
 
@@ -19,15 +22,23 @@ namespace EInfrastructure.Core.WeChat
     /// </summary>
     public class WebChatProcessRequest
     {
-        private readonly ILogService _logService;
-        private readonly JsonProvider _jsonProvider;
+        private readonly ILogProvider _logService;
+        private readonly IJsonProvider _jsonProvider;
+        private readonly IXmlProvider _xmlProvider;
 
-        public WebChatProcessRequest(ILogService logService, JsonProvider jsonProvider)
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="logServices"></param>
+        /// <param name="jsonProviders"></param>
+        /// <param name="xmlProviders"></param>
+        public WebChatProcessRequest(ICollection<ILogProvider> logServices, ICollection<IJsonProvider> jsonProviders,
+            ICollection<IXmlProvider> xmlProviders)
         {
-            _logService = logService;
-            _jsonProvider = jsonProvider;
+            _logService = InjectionSelectionCommon.GetImplement(logServices);
+            _jsonProvider = InjectionSelectionCommon.GetImplement(jsonProviders);
+            _xmlProvider = InjectionSelectionCommon.GetImplement(xmlProviders);
         }
-
 
         #region 处理用户消息
 
@@ -37,20 +48,22 @@ namespace EInfrastructure.Core.WeChat
         /// <param name="webChatAuthConfig"></param>
         /// <param name="wxConfig"></param>
         /// <param name="xml"></param>
-        public WebChatMessage ProcessRequest(WebChatAuthConfig webChatAuthConfig, WxConfig wxConfig, string xml)
+        /// <param name="errCode">错误码</param>
+        public WebChatMessage ProcessRequest(WebChatAuthConfig webChatAuthConfig, WxConfig wxConfig, string xml,
+            int? errCode = null)
         {
             WebChatMessage refundReponse = null;
             try
             {
                 if (!string.IsNullOrEmpty(Auth(webChatAuthConfig, wxConfig)))
                 {
-                    throw new BusinessException("签名错误");
+                    throw new BusinessException("签名错误",HttpStatus.Err.Id);
                 }
 
-                refundReponse = XmlCommon.Deserialize<WebChatMessage>(xml);
+                refundReponse = _xmlProvider.Deserialize<WebChatMessage>(xml);
                 if (refundReponse == null)
                 {
-                    throw new BusinessException("参数错误");
+                    throw new BusinessException("参数错误",HttpStatus.Err.Id);
                 }
             }
             catch (System.Exception e)
@@ -97,23 +110,24 @@ namespace EInfrastructure.Core.WeChat
         /// </summary>
         /// <param name="config"></param>
         /// <param name="code"></param>
+        /// <param name="errCode">错误码</param>
         /// <returns></returns>
         /// <exception cref="BusinessException"></exception>
-        public LoginResultConfig Login(WxConfig config, string code)
+        public LoginResultConfig Login(WxConfig config, string code, int? errCode = null)
         {
             LoginResultConfig loginResult = new LoginResultConfig();
 
-            if (config.Type == WebChatTypeEnum.ThirdPartyLogins)
+            if (config.Type == WebChatType.ThirdPartyLogins.Id)
             {
                 if (string.IsNullOrEmpty(code))
                 {
-                    throw new BusinessException("登录失败，授权异常");
+                    throw new BusinessException("登录失败，授权异常", errCode ?? HttpStatus.Err.Id);
                 }
 
                 WxUserInfo wxUserInfo = JsonConvert.DeserializeObject<WxUserInfo>(code);
                 if (wxUserInfo == null)
                 {
-                    throw new BusinessException("登录失败，授权异常");
+                    throw new BusinessException("登录失败，授权异常", errCode ?? HttpStatus.Err.Id);
                 }
 
                 loginResult.Success = !string.IsNullOrEmpty(wxUserInfo.Openid) &&
@@ -132,7 +146,7 @@ namespace EInfrastructure.Core.WeChat
                 //                                           code + "&grant_type=authorization_code";
 
                 string getAccessTokenUrl;
-                if (config.Type == WebChatTypeEnum.Mweb)
+                if (config.Type == WebChatType.MWeb.Id)
                 {
                     getAccessTokenUrl = "sns/oauth2/access_token?appid=" + config.AppId + "&secret=" +
                                         config.AppSecret + "&code=" +

@@ -4,7 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using EInfrastructure.Core.Exception;
+using EInfrastructure.Core.Configuration.Enumerations;
+using EInfrastructure.Core.Configuration.Exception;
 using Newtonsoft.Json;
 using RestSharp;
 using RestSharp.Extensions;
@@ -71,8 +72,9 @@ namespace EInfrastructure.Core.AliYun.Tbk.Common
         /// 获取商品url地址
         /// </summary>
         /// <param name="mUrl">口令中的url地址</param>
+        /// <param name="errCode">错误码</param>
         /// <returns></returns>
-        private string GetGoodUrl(string mUrl)
+        private string GetGoodUrl(string mUrl, int? errCode = null)
         {
             Uri uri = new Uri(mUrl);
             string host = uri.Host;
@@ -135,7 +137,7 @@ namespace EInfrastructure.Core.AliYun.Tbk.Common
                 }
             }
 
-            throw new BusinessException("获取商品真实地址出错");
+            throw new BusinessException("获取商品真实地址出错", errCode ?? HttpStatus.Err.Id);
         }
 
         #endregion
@@ -145,12 +147,12 @@ namespace EInfrastructure.Core.AliYun.Tbk.Common
         /// <summary>
         /// 判断是否是淘口令
         /// </summary>
-        /// <param name="str"></param>
-        /// <param name="code"></param>
+        /// <param name="str">待校验的字符串</param>
+        /// <param name="code">淘口令</param>
         /// <returns></returns>
-        public static bool IsAmoyPsd(string str, ref string code)
+        public static bool IsAmoyPsdTip(string str, ref string code)
         {
-            Regex reg = new Regex("￥.*￥", RegexOptions.Multiline);
+            Regex reg = new Regex("(￥|€|《).*(￥|€|《)", RegexOptions.Multiline);
             MatchCollection matchs = reg.Matches(str);
             foreach (Match item in matchs)
             {

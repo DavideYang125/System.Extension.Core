@@ -23,7 +23,7 @@ namespace EInfrastructure.Core.AliYun.DaYu
         public static IServiceCollection AddAliDaYu(this IServiceCollection services)
         {
             var service = services.First(x => x.ServiceType == typeof(IConfiguration));
-            var configuration = (IConfiguration) service.ImplementationInstance;
+            var configuration = (IConfiguration)service.ImplementationInstance;
             return AddAliDaYu(services, configuration);
         }
 
@@ -35,12 +35,26 @@ namespace EInfrastructure.Core.AliYun.DaYu
         /// 加载阿里大于短信服务
         /// </summary>
         /// <param name="services"></param>
+        /// <param name="func"></param>
+        public static IServiceCollection AddAliDaYu(this IServiceCollection services,
+            Func<AliSmsConfig> func)
+        {
+            StartUp.Run();
+            services.AddSingleton(func.Invoke());
+            return services;
+        }
+
+        /// <summary>
+        /// 加载阿里大于短信服务
+        /// </summary>
+        /// <param name="services"></param>
         /// <param name="action"></param>
         public static IServiceCollection AddAliDaYu(this IServiceCollection services,
             Action<AliSmsConfig> action)
         {
-            services.Configure(action);
-            return services;
+            AliSmsConfig aliSmsConfig = new AliSmsConfig();
+            action.Invoke(aliSmsConfig);
+            return services.AddAliDaYu(() => aliSmsConfig);
         }
 
         #endregion
@@ -55,7 +69,7 @@ namespace EInfrastructure.Core.AliYun.DaYu
         public static IServiceCollection AddAliDaYu(this IServiceCollection services,
             IConfiguration configuration)
         {
-            services.Configure<AliSmsConfig>(configuration);
+            services.AddAliDaYu(() => configuration.GetSection(nameof(AliSmsConfig)).Get<AliSmsConfig>());
             return services;
         }
 

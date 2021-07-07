@@ -1,8 +1,11 @@
 // Copyright (c) zhenlei520 All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Collections.Generic;
+using EInfrastructure.Core.Configuration.Enumerations;
+using EInfrastructure.Core.Configuration.Exception;
 using EInfrastructure.Core.Configuration.Ioc;
-using EInfrastructure.Core.Exception;
+using EInfrastructure.Core.HelpCommon;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace EInfrastructure.Core.AspNetCore.Filter
@@ -12,11 +15,19 @@ namespace EInfrastructure.Core.AspNetCore.Filter
     /// </summary>
     public class ModelValidationFilter
     {
-        private readonly ILogService _logService;
+        private readonly ILogProvider _logService;
 
-        public ModelValidationFilter(ILogService logService)
+        private static int ErrCode { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="logServices"></param>
+        /// <param name="errCode">错误码</param>
+        public ModelValidationFilter(ICollection<ILogProvider> logServices, int? errCode = null)
         {
-            _logService = logService;
+            ErrCode = errCode ?? HttpStatus.Err.Id;
+            _logService = InjectionSelectionCommon.GetImplement(logServices);
         }
 
         /// <summary>
@@ -34,15 +45,15 @@ namespace EInfrastructure.Core.AspNetCore.Filter
                         if (string.IsNullOrEmpty(error.ErrorMessage))
                         {
                             AddLog(context);
-                            throw new BusinessException("请检查参数格式是否正确");
+                            throw new BusinessException("请检查参数格式是否正确", ErrCode);
                         }
 
-                        throw new BusinessException(error.ErrorMessage);
+                        throw new BusinessException(error.ErrorMessage,HttpStatus.Err.Id);
                     }
                 }
 
                 AddLog(context);
-                throw new BusinessException("参数异常");
+                throw new BusinessException("参数异常", ErrCode);
             }
         }
 

@@ -2,10 +2,13 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using EInfrastructure.Core.AspNetCore.Api;
-using EInfrastructure.Core.Config.SerializeExtensions;
-using EInfrastructure.Core.Exception;
+using EInfrastructure.Core.Configuration.Exception;
+using EInfrastructure.Core.Configuration.Ioc.Plugs;
+using EInfrastructure.Core.HelpCommon;
+using EInfrastructure.Core.Serialize.NewtonsoftJson;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 
@@ -21,18 +24,19 @@ namespace EInfrastructure.Core.AspNetCore.Exception
         /// <summary>
         /// 异常委托
         /// </summary>
-        public static Func<HttpContext, System.Exception, bool> ExceptionAction = null;
+        public static Func<HttpContext, System.Exception, bool> ExceptionAction;
 
-        private readonly JsonProvider _jsonProvider;
+        private readonly IJsonProvider _jsonProvider;
 
         /// <summary>
         ///
         /// </summary>
         /// <param name="next"></param>
-        public ErrorHandlingMiddleware(RequestDelegate next, JsonProvider jsonProvider)
+        /// <param name="jsonProviders"></param>
+        public ErrorHandlingMiddleware(RequestDelegate next, ICollection<IJsonProvider> jsonProviders)
         {
-            this._next = next;
-            _jsonProvider = _jsonProvider;
+            _next = next;
+            _jsonProvider = InjectionSelectionCommon.GetImplement(jsonProviders);
         }
 
         /// <summary>
@@ -58,7 +62,7 @@ namespace EInfrastructure.Core.AspNetCore.Exception
                 }
 
                 var statusCode = context.Response.StatusCode;
-                string msg = "";
+                string msg;
 
                 if (ex is BusinessException)
                 {
@@ -128,12 +132,24 @@ namespace EInfrastructure.Core.AspNetCore.Exception
         /// </summary>
         /// <param name="builder"></param>
         /// <param name="exceptionAction">异常委托方法</param>
+        /// <param name="jsonProvider"></param>
         /// <returns></returns>
         public static IApplicationBuilder UseErrorHandling(this IApplicationBuilder builder,
-            Func<HttpContext, System.Exception, bool> exceptionAction = null)
+            Func<HttpContext, System.Exception, bool> exceptionAction = null, IJsonProvider jsonProvider = null)
         {
             ErrorHandlingMiddleware.ExceptionAction = exceptionAction;
-            return builder.UseMiddleware<ErrorHandlingMiddleware>();
+            if (jsonProvider == null)
+            {
+                return builder.UseMiddleware<ErrorHandlingMiddleware>(new List<IJsonProvider>()
+                {
+                    new NewtonsoftJsonProvider()
+                });
+            }
+
+            return builder.UseMiddleware<ErrorHandlingMiddleware>(new List<IJsonProvider>()
+            {
+                jsonProvider
+            });
         }
     }
 }

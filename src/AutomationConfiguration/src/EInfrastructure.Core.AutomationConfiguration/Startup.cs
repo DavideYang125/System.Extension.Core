@@ -28,6 +28,7 @@ namespace EInfrastructure.Core.AutomationConfiguration
             IConfigurationSection section,
             string file = "appsettings.json") where T : class, new()
         {
+            Load();
             services.Configure<T>(section);
             services.AddTransient<IWritableOptions<T>>(provider =>
             {
@@ -52,6 +53,7 @@ namespace EInfrastructure.Core.AutomationConfiguration
         /// <param name="isCompleteName">是否输入完整的类名，默认：false，为true时则需要输入命名空间+类名</param>
         /// <param name="action"></param>
         /// <param name="errConfigAction">配置信息错误回调</param>
+        /// <param name="isUpdate">是否更新</param>
         /// <returns></returns>
         public static IServiceCollection AddAutoConfig(this IServiceCollection services,
             IConfiguration configuration,
@@ -59,6 +61,7 @@ namespace EInfrastructure.Core.AutomationConfiguration
             bool isCompleteName = false, Action<ConfigAutoRegister> action = null,
             Action<string> errConfigAction = null, bool isUpdate = false)
         {
+            Load();
             ConfigAutoRegister configAutoRegisterExt = new ConfigAutoRegister();
             if (action == null)
             {
@@ -95,6 +98,7 @@ namespace EInfrastructure.Core.AutomationConfiguration
             IConfigurationSection section,
             string file) where T : class, new()
         {
+            Load();
             services.Configure<T>(section);
             services.AddTransient<IWritableOptions<T>>(provider =>
             {
@@ -159,6 +163,18 @@ namespace EInfrastructure.Core.AutomationConfiguration
                 var options = provider.GetService<IOptionsMonitor<object>>();
                 return new WritableOptions<object>(options, section.Key, file);
             });
+        }
+
+        #endregion
+
+        #region 加载必要服务
+
+        /// <summary>
+        ///加载必要服务
+        /// </summary>
+        private static void Load()
+        {
+            StartUp.Run();
         }
 
         #endregion

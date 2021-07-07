@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Linq;
-using EInfrastructure.Core.Exception;
+using EInfrastructure.Core.Configuration.Enumerations;
+using EInfrastructure.Core.Configuration.Exception;
+using EInfrastructure.Core.Tools.Component;
 using FluentValidation.Results;
 
 namespace EInfrastructure.Core.Validation.Common
@@ -17,13 +19,68 @@ namespace EInfrastructure.Core.Validation.Common
         /// <summary>
         /// 检查验证
         /// </summary>
+        /// <param name="entity">待检查的参数类</param>
+        /// <param name="msg">默认错误提示信息</param>
+        /// <param name="code">错误码</param>
+        /// <param name="noPublic">验证类的构造函数是否不公开的，默认只查询公开的构造函数false，否则为true</param>
+        /// <typeparam name="TEntity"></typeparam>
+        public static void Check<TEntity>(this TEntity entity, string msg = "参数异常", string code = "",
+            bool noPublic = false)
+            where TEntity : IFluentlValidatorEntity
+        {
+            Tools.Check.True(entity != null, msg);
+            var validatotor = new ServiceProvider().GetService<IFluentlValidator<TEntity>>(noPublic);
+            validatotor?.Validate(entity)
+                .Check(code);
+        }
+
+        /// <summary>
+        /// 检查验证
+        /// </summary>
+        /// <param name="entity">待检查的参数类</param>
+        /// <param name="msg">默认错误提示信息</param>
+        /// <param name="code">错误码</param>
+        /// <param name="noPublic">验证类的构造函数是否不公开的，默认只查询公开的构造函数false，否则为true</param>
+        /// <typeparam name="TEntity"></typeparam>
+        public static void Check<TEntity>(this TEntity entity, string msg = "参数异常", int code = 201,
+            bool noPublic = false)
+            where TEntity : IFluentlValidatorEntity
+        {
+            Tools.Check.True(entity != null, msg);
+            var validatotor = new ServiceProvider().GetService<IFluentlValidator<TEntity>>(noPublic);
+            validatotor?.Validate(entity)
+                .Check(code);
+        }
+
+        #endregion
+
+        #region 检查验证
+
+        /// <summary>
+        /// 检查验证
+        /// </summary>
         /// <param name="results"></param>
-        public static void Check(this ValidationResult results)
+        /// <param name="code">异常码</param>
+        public static void Check(this ValidationResult results, string code)
         {
             if (!results.IsValid)
             {
                 var msg = results.Errors.Select(x => x.ErrorMessage).FirstOrDefault();
-                throw new BusinessException(msg);
+                throw new BusinessException<string>(msg, code ?? HttpStatus.Err.Name);
+            }
+        }
+
+        /// <summary>
+        /// 检查验证
+        /// </summary>
+        /// <param name="results"></param>
+        /// <param name="code">异常码</param>
+        public static void Check(this ValidationResult results, int? code = null)
+        {
+            if (!results.IsValid)
+            {
+                var msg = results.Errors.Select(x => x.ErrorMessage).FirstOrDefault();
+                throw new BusinessException(msg, code ?? HttpStatus.Err.Id);
             }
         }
 

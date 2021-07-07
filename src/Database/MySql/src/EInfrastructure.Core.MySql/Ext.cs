@@ -1,4 +1,4 @@
-﻿// Copyright (c) zhenlei520 All rights reserved.
+// Copyright (c) zhenlei520 All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
@@ -7,19 +7,19 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using EInfrastructure.Core.HelpCommon;
+using EInfrastructure.Core.Tools;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace EInfrastructure.Core.MySql
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     public static class Ext
     {
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="optionsBuilder"></param>
         public static void EnableDebugTrace(this DbContextOptionsBuilder optionsBuilder)
@@ -65,12 +65,12 @@ namespace EInfrastructure.Core.MySql
 
                 // Create the mapping type and do the mapping
                 var mapper = Activator.CreateInstance(mappingType);
-                mapper.GetType().GetMethod("Map").Invoke(mapper, new[] {entityBuilder});
+                mapper.GetType().GetMethod("Map")?.Invoke(mapper, new[] { entityBuilder });
             }
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="dbContext"></param>
         /// <param name="sql"></param>
@@ -108,7 +108,7 @@ namespace EInfrastructure.Core.MySql
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="dbContext"></param>
         /// <param name="sql">sql语句</param>
@@ -157,7 +157,7 @@ namespace EInfrastructure.Core.MySql
         private readonly string categoryName;
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="categoryName"></param>
         public TraceLogger(string categoryName) => this.categoryName = categoryName;
@@ -185,12 +185,12 @@ namespace EInfrastructure.Core.MySql
             System.Exception exception,
             Func<TState, System.Exception, string> formatter)
         {
-            Trace.WriteLine($"{DateTime.Now.ToString("o")} {logLevel} {eventId.Id} {this.categoryName}");
+            Trace.WriteLine($"{DateTime.Now:o} {logLevel} {eventId.Id} {this.categoryName}");
             Trace.WriteLine(formatter(state, exception));
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="state"></param>
         /// <typeparam name="TState"></typeparam>
@@ -199,19 +199,19 @@ namespace EInfrastructure.Core.MySql
     }
 
     /// <summary>
-    /// 
+    ///
     /// </summary>
     public class TraceLoggerProvider : ILoggerProvider
     {
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="categoryName"></param>
         /// <returns></returns>
         public ILogger CreateLogger(string categoryName) => new TraceLogger(categoryName);
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public void Dispose()
         {

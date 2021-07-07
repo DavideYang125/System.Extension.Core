@@ -2,13 +2,15 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Runtime.Serialization.Json;
+using EInfrastructure.Core.Configuration.Enumerations;
 using EInfrastructure.Core.Configuration.Ioc;
+using EInfrastructure.Core.HelpCommon;
 using EInfrastructure.Core.UCloud.Storage.Common;
 using EInfrastructure.Core.UCloud.Storage.Config;
-using EInfrastructure.Core.UCloud.Storage.Validator;
 using EInfrastructure.Core.Validation.Common;
 
 namespace EInfrastructure.Core.UCloud.Storage
@@ -16,23 +18,26 @@ namespace EInfrastructure.Core.UCloud.Storage
     /// <summary>
     /// 基类UCloud实现
     /// </summary>
-    public class BaseStorageProvider
+    public abstract class BaseStorageProvider
     {
-        protected readonly ILogService _logService;
+        /// <summary>
+        ///
+        /// </summary>
+        protected readonly ILogProvider LogService;
 
         /// <summary>
         /// UCloud配置
         /// </summary>
-        protected readonly UCloudStorageConfig _uCloudConfig;
+        protected readonly UCloudStorageConfig UCloudConfig;
 
         /// <summary>
         /// 基类UCloud实现
         /// </summary>
-        public BaseStorageProvider(ILogService logService, UCloudStorageConfig uCloudConfig)
+        public BaseStorageProvider(ICollection<ILogProvider> logServices, UCloudStorageConfig uCloudConfig)
         {
-            _logService = logService;
-            _uCloudConfig = uCloudConfig;
-            new UCloudConfigValidator().Validate(_uCloudConfig).Check();
+            LogService = InjectionSelectionCommon.GetImplement(logServices);
+            UCloudConfig = uCloudConfig;
+            ValidationCommon.Check(uCloudConfig,"Uc云存储配置异常",HttpStatus.Err.Name);
         }
 
         #region 上传文件
@@ -44,15 +49,15 @@ namespace EInfrastructure.Core.UCloud.Storage
         /// <param name="key">文件地址</param>
         /// <param name="ext">扩展名</param>
         /// <exception cref="Exception"></exception>
-        internal bool UploadFile(Stream stream, string key, string ext)
+        internal virtual bool UploadFile(Stream stream, string key, string ext)
         {
             HttpWebRequest request = null;
             HttpWebResponse response = null;
             try
             {
-                request = (HttpWebRequest) WebRequest.Create(Utils.GetUrl(_uCloudConfig, key));
+                request = (HttpWebRequest) WebRequest.Create(Utils.GetUrl(UCloudConfig, key));
                 request.KeepAlive = false;
-                Utils.SetHeaders(request, ext, _uCloudConfig, key, "PUT");
+                Utils.SetHeaders(request, ext, UCloudConfig, key, "PUT");
                 Utils.CopyFile(request, stream);
 
                 response = HttpWebResponseExt.GetResponseNoException(request);
@@ -60,13 +65,13 @@ namespace EInfrastructure.Core.UCloud.Storage
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
                     string e = FormatString(body);
-                    _logService.Error(string.Format("{0} {1}", response.StatusDescription, e));
+                    LogService.Error(string.Format("{0} {1}", response.StatusDescription, e));
                     return false;
                 }
             }
             catch (System.Exception e)
             {
-                _logService.Error(e.ToString());
+                LogService.Error(e.ToString());
                 return false;
             }
             finally
@@ -76,6 +81,19 @@ namespace EInfrastructure.Core.UCloud.Storage
             }
 
             return true;
+        }
+
+        #endregion
+
+        #region 返回权重
+
+        /// <summary>
+        /// 返回权重
+        /// </summary>
+        /// <returns></returns>
+        public virtual int GetWeights()
+        {
+            return 99;
         }
 
         #endregion

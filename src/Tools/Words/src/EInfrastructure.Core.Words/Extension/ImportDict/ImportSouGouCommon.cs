@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using EInfrastructure.Core.Config.WordsExtensions;
+using EInfrastructure.Core.Configuration.Ioc.Plugs.Words;
 using EInfrastructure.Core.HelpCommon.Files;
 using EInfrastructure.Core.Words.Extension.ImportDict.Common;
 
@@ -15,9 +15,9 @@ namespace EInfrastructure.Core.Words.Extension.ImportDict
     /// </summary>
     internal class ImportSouGouCommon
     {
-        private static IWordService _wordService;
+        private static IWordProvider _wordService;
 
-        internal static void Initialize(IWordService wordService, string path)
+        internal static void Initialize(IWordProvider wordService, string path)
         {
             _wordService = wordService;
             var files = FileCommon.GetFiles(path, "*.scel");

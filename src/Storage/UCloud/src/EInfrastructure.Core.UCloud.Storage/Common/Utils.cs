@@ -3,7 +3,7 @@
 
 using System.IO;
 using System.Net;
-using EInfrastructure.Core.HelpCommon;
+using EInfrastructure.Core.Tools;
 using EInfrastructure.Core.UCloud.Storage.Config;
 
 namespace EInfrastructure.Core.UCloud.Storage.Common
@@ -16,7 +16,7 @@ namespace EInfrastructure.Core.UCloud.Storage.Common
         public enum RequestHeadType
         {
             HEAD_FIELD_CHECK
-        };
+        }
 
         internal static int bufferLen = 32 * 1024;
 

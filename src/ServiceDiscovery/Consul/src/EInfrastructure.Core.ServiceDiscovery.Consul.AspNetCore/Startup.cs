@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using EInfrastructure.Core.ServiceDiscovery.Consul.AspNetCore.Config;
 using Microsoft.Extensions.Configuration;
@@ -36,12 +37,41 @@ namespace EInfrastructure.Core.ServiceDiscovery.Consul.AspNetCore
         /// 加载Consul服务
         /// </summary>
         /// <param name="services"></param>
+        /// <param name="func">Consul 配置</param>
+        /// <returns></returns>
+        public static IServiceCollection AddConsul(this IServiceCollection services,
+            Func<ConsulConfig> func)
+        {
+            EInfrastructure.Core.StartUp.Run();
+            services.AddSingleton(func.Invoke());
+            return services;
+        }
+
+        /// <summary>
+        /// 加载Consul服务
+        /// </summary>
+        /// <param name="services"></param>
         /// <param name="action">Consul 配置</param>
         /// <returns></returns>
         public static IServiceCollection AddConsul(this IServiceCollection services,
-            Action<ConsulConfig> action)
+            Action<List<ConsulConfig>> action)
         {
-            services.Configure(action);
+            List<ConsulConfig> consulConfigs = new List<ConsulConfig>();
+            action.Invoke(consulConfigs);
+            return services.AddConsul(() => consulConfigs);
+        }
+
+        /// <summary>
+        /// 加载Consul服务
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="action">Consul 配置</param>
+        /// <returns></returns>
+        public static IServiceCollection AddConsul(this IServiceCollection services,
+            Func<List<ConsulConfig>> action)
+        {
+            EInfrastructure.Core.StartUp.Run();
+            services.AddSingleton(action.Invoke());
             return services;
         }
 
@@ -53,13 +83,13 @@ namespace EInfrastructure.Core.ServiceDiscovery.Consul.AspNetCore
         /// 加载Consul服务
         /// </summary>
         /// <param name="services"></param>
-        /// <param name="action">Consul 配置</param>
+        /// <param name="configuration">Consul 配置</param>
         /// <returns></returns>
         public static IServiceCollection AddConsul(this IServiceCollection services,
             IConfiguration configuration)
         {
-            services.Configure<ConsulConfig>(configuration);
-            return services;
+            EInfrastructure.Core.StartUp.Run();
+            return services.AddConsul(() => configuration.GetSection(nameof(ConsulConfig)).Get<ConsulConfig>());
         }
 
         #endregion

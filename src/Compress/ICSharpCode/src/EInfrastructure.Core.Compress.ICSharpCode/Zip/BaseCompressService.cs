@@ -5,8 +5,8 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
-using EInfrastructure.Core.Exception;
-using EInfrastructure.Core.HelpCommon;
+using EInfrastructure.Core.Configuration.Exception;
+using EInfrastructure.Core.Tools;
 using ICSharpCode.SharpZipLib.Checksum;
 using ICSharpCode.SharpZipLib.Zip;
 
@@ -15,7 +15,7 @@ namespace EInfrastructure.Core.Compress.ICSharpCode.Zip
     /// <summary>
     ///
     /// </summary>
-    public class BaseZipCompressService : BaseCompressService
+    public class BaseZipCompressService : BaseCompressProvider
     {
         #region 检查是否存在
 

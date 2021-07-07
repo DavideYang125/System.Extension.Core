@@ -1,11 +1,12 @@
-﻿using EInfrastructure.Core.AutomationConfiguration.Interface;
+﻿using System.Collections.Generic;
+using EInfrastructure.Core.Validation;
 
 namespace EInfrastructure.Core.Redis.Config
 {
     /// <summary>
     /// Redis配置
     /// </summary>
-    public class RedisConfig : ISingletonConfigModel
+    public class RedisConfig : IFluentlValidatorEntity
     {
         /// <summary>
         /// Ip地址
@@ -36,5 +37,15 @@ namespace EInfrastructure.Core.Redis.Config
         /// Redis连接池连接数
         /// </summary>
         public int PoolSize { get; set; }
+
+        /// <summary>
+        /// Redis默认 Hashkey  过期缓存key前缀
+        /// </summary>
+        public string OverTimeCacheKeyPre { get; set; }
+
+        /// <summary>
+        /// Hash缓存key 范围
+        /// </summary>
+        public List<string> OverTimeCacheKeys { get; set; }
     }
 }

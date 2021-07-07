@@ -2,10 +2,9 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using System.Linq;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using EInfrastructure.Core.Configuration.Ioc;
+using EInfrastructure.Core.AutoFac.Modules;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EInfrastructure.Core.AutoFac
@@ -16,46 +15,35 @@ namespace EInfrastructure.Core.AutoFac
     public class AutofacAutoRegister
     {
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="services"></param>
         /// <param name="action"></param>
         /// <returns></returns>
+        [Obsolete("Use the EInfrastructure.Core.AutoFac.AutofacAutoRegister.Use method instead")]
         public virtual IServiceProvider Build(IServiceCollection services,
-            Action<ContainerBuilder> action)
+            Action<ContainerBuilder> action = null)
         {
+            return Use(services, action);
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        public static IServiceProvider Use(IServiceCollection services,
+            Action<ContainerBuilder> action = null)
+        {
+            EInfrastructure.Core.StartUp.Run();
             var builder = new ContainerBuilder();
-            var assemblys = AppDomain.CurrentDomain.GetAssemblies().ToArray();
-
-            var perRequestType = typeof(IPerRequest);
-            builder.RegisterAssemblyTypes(assemblys)
-                .Where(t => perRequestType.IsAssignableFrom(t) && t != perRequestType)
-                .PropertiesAutowired()
-                .AsImplementedInterfaces()
-                .InstancePerLifetimeScope();
-
-            var perDependencyType = typeof(IDependency);
-            builder.RegisterAssemblyTypes(assemblys)
-                .Where(t => perDependencyType.IsAssignableFrom(t) && t != perDependencyType)
-                .PropertiesAutowired()
-                .AsImplementedInterfaces()
-                .InstancePerDependency();
-
-            var singleInstanceType = typeof(ISingleInstance);
-            builder.RegisterAssemblyTypes(assemblys)
-                .Where(t => singleInstanceType.IsAssignableFrom(t) && t != singleInstanceType)
-                .PropertiesAutowired()
-                .AsImplementedInterfaces()
-                .SingleInstance();
-
-            action(builder);
-
+            builder.RegisterModule<AutomaticInjectionModule>();
+            action?.Invoke(builder);
             builder.Populate(services);
-
             var container = builder.Build();
-
             var servicesProvider = new AutofacServiceProvider(container);
-
+            ServiceComponent.SetServiceProvider(servicesProvider);
             return servicesProvider;
         }
     }

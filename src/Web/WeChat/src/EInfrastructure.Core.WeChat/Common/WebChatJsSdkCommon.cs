@@ -2,9 +2,11 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using EInfrastructure.Core.Config.CacheExtensions;
-using EInfrastructure.Core.Exception;
-using EInfrastructure.Core.HelpCommon;
+using EInfrastructure.Core.Configuration.Enumerations;
+using EInfrastructure.Core.Configuration.Exception;
+using EInfrastructure.Core.Configuration.Ioc.Plugs;
+using EInfrastructure.Core.Tools;
+using EInfrastructure.Core.Tools.Enumerations;
 using EInfrastructure.Core.WeChat.Config;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -18,7 +20,7 @@ namespace EInfrastructure.Core.WeChat.Common
     public class WebChatJsSdkCommon
     {
         private readonly WxConfig _config;
-        private readonly ICacheService _cacheService;
+        private readonly ICacheProvider _cacheService;
 
         /// <summary>
         ///
@@ -30,7 +32,7 @@ namespace EInfrastructure.Core.WeChat.Common
         /// </summary>
         /// <param name="config"></param>
         /// <param name="cacheService"></param>
-        public WebChatJsSdkCommon(WxConfig config, ICacheService cacheService)
+        public WebChatJsSdkCommon(WxConfig config, ICacheProvider cacheService)
         {
             _config = config;
             _cacheService = cacheService;
@@ -40,13 +42,14 @@ namespace EInfrastructure.Core.WeChat.Common
         ///
         /// </summary>
         /// <param name="cacheKey"></param>
+        /// <param name="errCode">错误码</param>
         /// <returns></returns>
         /// <exception cref="BusinessException"></exception>
-        public string GetAccessToken(string cacheKey)
+        public string GetAccessToken(string cacheKey, int? errCode = null)
         {
             cacheKey = cacheKey + _config.Type;
 
-            string token = _cacheService.StringGet<string>(cacheKey);
+            string token = _cacheService.StringGet(cacheKey);
 
             if (string.IsNullOrEmpty(token))
             {
@@ -57,7 +60,7 @@ namespace EInfrastructure.Core.WeChat.Common
 
                 if (result.Contains("errcode"))
                 {
-                    throw new BusinessException("获取token失败");
+                    throw new BusinessException("获取token失败", errCode??HttpStatus.Err.Id);
                 }
 
                 JObject obj = JsonConvert.DeserializeObject<dynamic>(result);
@@ -75,11 +78,12 @@ namespace EInfrastructure.Core.WeChat.Common
         /// </summary>
         /// <param name="tickCacheKey"></param>
         /// <param name="tokenCacheKey"></param>
+        /// <param name="errCode">错误码</param>
         /// <returns></returns>
         /// <exception cref="BusinessException"></exception>
-        public string GetJsApiTicket(string tickCacheKey, string tokenCacheKey)
+        public string GetJsApiTicket(string tickCacheKey, string tokenCacheKey, int? errCode = null)
         {
-            string ticket = _cacheService.StringGet<string>(tickCacheKey);
+            string ticket = _cacheService.StringGet(tickCacheKey);
 
             if (string.IsNullOrEmpty(ticket))
             {
@@ -91,7 +95,7 @@ namespace EInfrastructure.Core.WeChat.Common
 
                 if (!result.Contains("ok"))
                 {
-                    throw new BusinessException("获取ticket失败");
+                    throw new BusinessException("获取ticket失败", errCode??HttpStatus.Err.Id);
                 }
 
                 dynamic obj = JsonConvert.DeserializeObject<dynamic>(result);
@@ -117,7 +121,7 @@ namespace EInfrastructure.Core.WeChat.Common
 
             string nonceStr = Guid.NewGuid().ToString().Replace("-", "");
 
-            long timestamp = TimeCommon.CurrentTimeMillis();
+            long timestamp = DateTime.Now.ToUnixTimestamp(TimestampType.Second);
 
             JsSdkConfig config = new JsSdkConfig()
             {

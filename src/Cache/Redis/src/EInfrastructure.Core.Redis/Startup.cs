@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using EInfrastructure.Core.Redis.Config;
+using EInfrastructure.Core.Redis.Internal;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -32,12 +33,26 @@ namespace EInfrastructure.Core.Redis
         /// 加载Redis服务
         /// </summary>
         /// <param name="services"></param>
+        /// <param name="func"></param>
+        public static IServiceCollection AddRedis(this IServiceCollection services,
+            Func<RedisConfig> func)
+        {
+            EInfrastructure.Core.StartUp.Run();
+            services.AddSingleton(func.Invoke());
+            return services;
+        }
+
+        /// <summary>
+        /// 加载Redis服务
+        /// </summary>
+        /// <param name="services"></param>
         /// <param name="action"></param>
         public static IServiceCollection AddRedis(this IServiceCollection services,
             Action<RedisConfig> action)
         {
-            services.Configure(action);
-            return services;
+            RedisConfig redisConfig = new RedisConfig();
+            action.Invoke(redisConfig);
+            return services.AddRedis(() => redisConfig);
         }
 
         #endregion
@@ -48,12 +63,13 @@ namespace EInfrastructure.Core.Redis
         /// 加载Redis服务
         /// </summary>
         /// <param name="services"></param>
-        /// <param name="action"></param>
+        /// <param name="configuration"></param>
         public static IServiceCollection AddRedis(this IServiceCollection services,
             IConfiguration configuration)
         {
-            services.Configure<RedisConfig>(configuration);
-            return services;
+            EInfrastructure.Core.StartUp.Run();
+            services.AddHostedService<Bootstrapper>();
+            return services.AddRedis(() => configuration.GetSection(nameof(RedisConfig)).Get<RedisConfig>());
         }
 
         #endregion

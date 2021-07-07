@@ -2,12 +2,13 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Threading;
 using Consul;
+using EInfrastructure.Core.Configuration.Enumerations;
 using EInfrastructure.Core.ServiceDiscovery.Consul.AspNetCore.Config;
-using EInfrastructure.Core.ServiceDiscovery.Consul.AspNetCore.Validator;
 using EInfrastructure.Core.Validation.Common;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EInfrastructure.Core.ServiceDiscovery.Consul.AspNetCore
@@ -23,17 +24,49 @@ namespace EInfrastructure.Core.ServiceDiscovery.Consul.AspNetCore
         /// 服务注册
         /// </summary>
         /// <param name="app"></param>
-        /// <param name="lifetime"></param>
+        /// <param name="cancellationToken">停止</param>
         /// <returns></returns>
-        public static IApplicationBuilder UseConsul(this IApplicationBuilder app, IApplicationLifetime lifetime)
+        public static IApplicationBuilder UseConsul(this IApplicationBuilder app, CancellationToken cancellationToken)
         {
-            var consulConfig = app.ApplicationServices.GetService<ConsulConfig>();
-            new ApiServiceConfigValidator().Validate(consulConfig.ApiServiceConfig).Check();
-            new ApiServiceHealthyConfigValidator().Validate(consulConfig.ApiServiceHealthyConfig).Check();
+            var consulConfigs = app.ApplicationServices.GetService<List<ConsulConfig>>();
+            if (consulConfigs == null || consulConfigs.Count == 0)
+            {
+                consulConfigs = new List<ConsulConfig>()
+                {
+                    app.ApplicationServices.GetService<ConsulConfig>()
+                };
+            }
+
+            consulConfigs.ForEach(consulConfig => { consulConfig.UseConsul(cancellationToken); });
+            return app;
+        }
+
+        /// <summary>
+        /// 服务注册
+        /// </summary>
+        /// <param name="consulConfig">配置信息</param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        private static void UseConsul(this ConsulConfig consulConfig, CancellationToken cancellationToken)
+        {
+            ValidationCommon.Check(consulConfig.ApiServiceConfig, "consul service 配置异常", HttpStatus.Err.Name);
+            ValidationCommon.Check(consulConfig.ApiServiceHealthyConfig, "consul healthy service 配置异常",
+                HttpStatus.Err.Name);
 
             var consulClient =
                 new ConsulClient(x =>
-                    x.Address = new Uri(consulConfig.ConsulClientAddress)); //请求注册的 Consul 地址
+                {
+                    x.Address = new Uri(consulConfig.ConsulClientAddress);
+                    if (!string.IsNullOrEmpty(consulConfig.ApiServiceConfig.Token))
+                    {
+                        x.Token = consulConfig.ApiServiceConfig.Token;
+                    }
+
+                    if (!string.IsNullOrEmpty(consulConfig.ApiServiceConfig.Datacenter))
+                    {
+                        x.Datacenter = consulConfig.ApiServiceConfig.Datacenter;
+                    }
+                }); //请求注册的 Consul 地址
 
             var httpCheck = new AgentServiceCheck()
             {
@@ -60,15 +93,14 @@ namespace EInfrastructure.Core.ServiceDiscovery.Consul.AspNetCore
                     ? new[] {$"urlprefix-/{consulConfig.ApiServiceConfig.Name}"}
                     : consulConfig.ApiServiceConfig.Tags //添加 urlprefix-/servicename 格式的 tag 标签，以便 Fabio 识别
             };
+            consulClient.Agent.ServiceRegister(registration)
+                .Wait(); //服务启动时注册，内部实现其实就是使用 Consul API 进行注册（HttpClient发起）
 
-            consulClient.Agent.ServiceRegister(registration).Wait(); //服务启动时注册，内部实现其实就是使用 Consul API 进行注册（HttpClient发起）
-
-            lifetime.ApplicationStopping.Register(() =>
+            cancellationToken.Register(() =>
             {
-                consulClient.Agent.ServiceDeregister(registration.ID).Wait(); //服务停止时取消注册
+                consulClient.Agent.ServiceDeregister(registration.ID, cancellationToken)
+                    .Wait(cancellationToken); //服务停止时取消注册
             });
-
-            return app;
         }
 
         #endregion

@@ -4,7 +4,8 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
+using EInfrastructure.Core.Tools;
+using EInfrastructure.Core.Tools.Enumerations;
 using Microsoft.AspNetCore.Http;
 
 namespace EInfrastructure.Core.HelpCommon.Files
@@ -12,7 +13,7 @@ namespace EInfrastructure.Core.HelpCommon.Files
     /// <summary>
     /// 文件帮助类
     /// </summary>
-    public class FileCommon
+    public class FileCommon : Tools.Files.FileCommon
     {
         #region 得到文件md5
 
@@ -52,10 +53,11 @@ namespace EInfrastructure.Core.HelpCommon.Files
         /// 得到文件的Sha1
         /// </summary>
         /// <param name="file"></param>
+        /// <param name="isUpper">是否转大写</param>
         /// <returns></returns>
-        public static string GetSha1(IFormFile file)
+        public static string GetSha1(IFormFile file, bool isUpper = true)
         {
-            return GetSha(file, new SHA1CryptoServiceProvider());
+            return GetSha(file, new SHA1CryptoServiceProvider(), isUpper);
         }
 
         #endregion
@@ -66,10 +68,11 @@ namespace EInfrastructure.Core.HelpCommon.Files
         /// 得到文件的Sha256
         /// </summary>
         /// <param name="file"></param>
+        /// <param name="isUpper">是否转大写</param>
         /// <returns></returns>
-        public static string GetSha256(IFormFile file)
+        public static string GetSha256(IFormFile file, bool isUpper = true)
         {
-            return GetSha(file, new SHA256CryptoServiceProvider());
+            return GetSha(file, new SHA256CryptoServiceProvider(), isUpper);
         }
 
         #endregion
@@ -77,13 +80,14 @@ namespace EInfrastructure.Core.HelpCommon.Files
         #region 得到文件的Sha384
 
         /// <summary>
-        /// 得到文件的Sha512
+        /// 得到文件的Sha384
         /// </summary>
         /// <param name="file"></param>
+        /// <param name="isUpper">是否转大写</param>
         /// <returns></returns>
-        public static string GetSha384(IFormFile file)
+        public static string GetSha384(IFormFile file, bool isUpper = true)
         {
-            return GetSha(file, new SHA384CryptoServiceProvider());
+            return GetSha(file, new SHA384CryptoServiceProvider(), isUpper);
         }
 
         #endregion
@@ -94,10 +98,11 @@ namespace EInfrastructure.Core.HelpCommon.Files
         /// 得到文件的Sha512
         /// </summary>
         /// <param name="file"></param>
+        /// <param name="isUpper">是否转大写</param>
         /// <returns></returns>
-        public static string GetSha512(IFormFile file)
+        public static string GetSha512(IFormFile file, bool isUpper = true)
         {
-            return GetSha(file, new SHA512CryptoServiceProvider());
+            return GetSha(file, new SHA512CryptoServiceProvider(), isUpper);
         }
 
         #endregion
@@ -109,21 +114,14 @@ namespace EInfrastructure.Core.HelpCommon.Files
         /// </summary>
         /// <param name="formFile"></param>
         /// <param name="hashAlgorithm"></param>
+        /// <param name="isUpper">是否转大写</param>
         /// <returns></returns>
-        private static string GetSha(IFormFile formFile, HashAlgorithm hashAlgorithm)
+        private static string GetSha(IFormFile formFile, HashAlgorithm hashAlgorithm, bool isUpper)
         {
             var stream = formFile.OpenReadStream();
             byte[] retval = hashAlgorithm.ComputeHash(stream);
             stream.Close();
-            return SecurityCommon.GetSha(retval, hashAlgorithm);
-
-            StringBuilder sc = new StringBuilder();
-            for (int i = 0; i < retval.Length; i++)
-            {
-                sc.Append(retval[i].ToString("X2"));
-            }
-
-            return sc.ToString();
+            return SecurityCommon.GetSha(retval, hashAlgorithm, isUpper);
         }
 
         #endregion
@@ -136,119 +134,39 @@ namespace EInfrastructure.Core.HelpCommon.Files
         /// <param name="formFile"></param>
         /// <param name="encryptType">加密方式，默认加密方式为Sha256</param>
         /// <returns></returns>
-        public static FileInfo Get(IFormFile formFile,
-            EncryptTypeEnum encryptType = EncryptTypeEnum.Sha256)
+        public static EInfrastructure.Core.Tools.Files.FileInfo Get(IFormFile formFile,
+            EncryptType encryptType = null)
         {
-            string conditionCode;
-            switch (encryptType)
+            string conditionCode = "";
+            if (encryptType != null)
             {
-                case EncryptTypeEnum.Md5:
+                if (encryptType.Id == EncryptType.Md5.Id)
+                {
                     conditionCode = GetMd5(formFile);
-                    break;
-                case EncryptTypeEnum.Sha1:
+                }
+                else if (encryptType.Id == EncryptType.Sha1.Id)
+                {
                     conditionCode = GetSha1(formFile);
-                    break;
-                case EncryptTypeEnum.Sha256:
-                default:
+                }
+                else if (encryptType.Id == EncryptType.Sha256.Id)
+                {
                     conditionCode = GetSha256(formFile);
-                    break;
-                case EncryptTypeEnum.Sha384:
+                }
+                else if (encryptType.Id == EncryptType.Sha384.Id)
+                {
                     conditionCode = GetSha384(formFile);
-                    break;
-                case EncryptTypeEnum.Sha512:
+                }
+                else if (encryptType.Id == EncryptType.Sha512.Id)
+                {
                     conditionCode = GetSha512(formFile);
-                    break;
-            }
-
-            return new EInfrastructure.Core.HelpCommon.Files.FileInfo()
-            {
-                Name = formFile.FileName,
-                ConditionCode = conditionCode
-            };
-        }
-
-        #endregion
-
-        #region 得到文件地址信息
-
-        /// <summary>
-        /// 得到当前文件夹下的所有文件地址
-        /// </summary>
-        /// <param name="path">要搜索的目录的相对或绝对路径</param>
-        /// <returns></returns>
-        public static string[] GetFiles(string path)
-        {
-            return System.IO.Directory.GetFiles(path);
-        }
-
-        /// <summary>
-        /// 根据通配符搜索文件下的所有地址信息，可选择查询所有层级的或者当前层级的
-        /// </summary>
-        /// <param name="path">要搜索的目录的相对或绝对路径</param>
-        /// <param name="searchPattern">要与 path 中的文件名匹配的搜索字符串。此参数可以包含有效文本路径和通配符（* 和 ?）的组合（请参见“备注”），但不支持正则表达式。</param>
-        /// <param name="searchOption">默认当前文件夹下 TopDirectoryOnly，若查询包含所有子目录为AllDirectories</param>
-        /// <returns></returns>
-        public static string[] GetFiles(string path, string searchPattern,
-            SearchOption searchOption = SearchOption.TopDirectoryOnly)
-        {
-            return System.IO.Directory.GetFiles(path, searchPattern, searchOption);
-        }
-
-        #endregion
-
-        #region 将文件转换成Base64格式
-
-        /// <summary>
-        /// 将文件转换成Base64格式
-        /// </summary>
-        /// <param name="filePath">文件地址</param>
-        /// <returns></returns>
-        public static string FileToBase64(string filePath)
-        {
-            string result = "";
-            try
-            {
-                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-                {
-                    return fs.ConvertToBase64();
                 }
             }
-            catch
+            else
             {
-                result = "";
+                conditionCode = GetSha256(formFile);
             }
 
-            return result;
-        }
-
-        #endregion
-        
-        #region 获取文件内容
-
-        /// <summary>
-        /// 获取文件内容
-        /// </summary>
-        /// <param name="filePath">文件地址</param>
-        /// <returns></returns>
-        public static string GetFileContent(string filePath)
-        {
-            string result = "";
-            try
-            {
-                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-                {
-                    using (StreamReader reader = new StreamReader(fs))
-                    {
-                        result = reader.ReadLine();
-                    }
-                }
-            }
-            catch
-            {
-                result = "";
-            }
-
-            return result;
+            return new EInfrastructure.Core.Tools.Files.FileInfo(formFile.FileName, conditionCode);
         }
 
         #endregion

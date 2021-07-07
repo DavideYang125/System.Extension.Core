@@ -20,7 +20,6 @@ namespace EInfrastructure.Core.UCloud.Storage
         /// 加载UCloud服务
         /// </summary>
         /// <param name="services"></param>
-        /// <param name="configuration"></param>
         public static IServiceCollection AddUCloudStorage(this IServiceCollection services)
         {
             var service = services.First(x => x.ServiceType == typeof(IConfiguration));
@@ -36,12 +35,26 @@ namespace EInfrastructure.Core.UCloud.Storage
         /// 加载UCloud服务
         /// </summary>
         /// <param name="services"></param>
+        /// <param name="func"></param>
+        public static IServiceCollection AddUCloudStorage(this IServiceCollection services,
+            Func<UCloudStorageConfig> func)
+        {
+            EInfrastructure.Core.StartUp.Run();
+            services.AddSingleton(func.Invoke());
+            return services;
+        }
+
+        /// <summary>
+        /// 加载UCloud服务
+        /// </summary>
+        /// <param name="services"></param>
         /// <param name="action"></param>
         public static IServiceCollection AddUCloudStorage(this IServiceCollection services,
             Action<UCloudStorageConfig> action)
         {
-            services.Configure(action);
-            return services;
+            UCloudStorageConfig uCloudStorageConfig = new UCloudStorageConfig();
+            action.Invoke(uCloudStorageConfig);
+            return services.AddUCloudStorage(()=>uCloudStorageConfig);
         }
 
         #endregion
@@ -57,7 +70,8 @@ namespace EInfrastructure.Core.UCloud.Storage
             IConfiguration configuration)
         {
             services.Configure<UCloudStorageConfig>(configuration);
-            return services;
+            return AddUCloudStorage(services,
+                () => configuration.GetSection(nameof(UCloudStorageConfig)).Get<UCloudStorageConfig>());
         }
 
         #endregion
